@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract StakeV2 {
     using SafeMath for uint256;
 
-    IERC20 public tokenAddress;
+    IERC20 public ERC20Token;
     uint256 public total_stake = 0; //total amount of tokens in the staking pool
     uint256 public reward_per_token = 0; //accumulated amount of reward at the moment t from staking start point
     mapping(address => uint256) public stake; //staking pool
@@ -21,10 +21,10 @@ contract StakeV2 {
 
     /**
      * @dev constructor
-     * @param _tokenAddress Token Address
+     * @param _ERC20Token Token Address
      */
-    constructor(address _tokenAddress) {
-        tokenAddress = IERC20(_tokenAddress);
+    constructor(address _ERC20Token) {
+        ERC20Token = IERC20(_ERC20Token);
     }
 
     /**
@@ -34,9 +34,10 @@ contract StakeV2 {
     function deposit(uint256 _amount) public {
         stake[msg.sender] = stake[msg.sender].add(_amount);
         reward_tally[msg.sender] = reward_tally[msg.sender].add(
-            reward_per_token.mul(_amount)
+            reward_per_token.mul(_amount).div(precision)
         );
         total_stake = total_stake.add(_amount);
+        ERC20Token.transferFrom(msg.sender, address(this), _amount);
     }
 
     /**
@@ -48,7 +49,9 @@ contract StakeV2 {
             total_stake != 0,
             "Cannot distribute to staking pool with 0 stake"
         );
-        reward_per_token = reward_per_token.add(_reward.div(total_stake));
+        reward_per_token = reward_per_token.add(
+            _reward.mul(precision).div(total_stake)
+        );
     }
 
     /**
@@ -61,38 +64,42 @@ contract StakeV2 {
     }
 
     /**
-     * @dev Compute the total accumulated reward for each stakholder according to staked amount    
+     * @dev Compute the total accumulated reward for each stakholder according to staked amount
      */
     function compute_reward() public view returns (uint256) {
-        uint256 reward = stake[msg.sender].mul(
-            reward_per_token.sub(reward_tally[msg.sender])
-        );
+        uint256 reward = stake[msg.sender]
+            .mul(reward_per_token)
+            .div(precision)
+            .sub(reward_tally[msg.sender]);
         return reward;
     }
 
     /**
-     * @dev Widthdraw some or total amount of staked tokens from staking pool     
+     * @dev Widthdraw some or total amount of staked tokens from staking pool
      * @param _amount Amount for unstaking
      */
     function withdraw_stake(uint256 _amount) public {
         require(stake[msg.sender] != 0, "Stake not found for given address");
         require(
-            stake[msg.sender] > _amount,
+            stake[msg.sender] >= _amount,
             "Requested amount greater than staked amount"
         );
         stake[msg.sender] = stake[msg.sender].sub(_amount);
         reward_tally[msg.sender] = reward_tally[msg.sender].sub(
-            reward_per_token.mul(_amount)
+            reward_per_token.mul(_amount).div(precision)
         );
         total_stake = total_stake.sub(_amount);
+        ERC20Token.transfer(msg.sender, _amount);
     }
 
     /**
      * @dev Widthdraw the total accumulated reward
      */
-    function withdraw_reward() public returns (uint256) {
+    function withdraw_reward() public {
         uint256 reward = compute_reward();
-        reward_tally[msg.sender] = stake[msg.sender].mul(reward_per_token);
-        return reward;
+        reward_tally[msg.sender] = stake[msg.sender].mul(reward_per_token).div(
+            precision
+        );
+        ERC20Token.transfer(msg.sender, reward);
     }
 }
