@@ -19,11 +19,15 @@
   "homepage": "https://github.com/kevinlai1010/tkn-staking#readme",
   "dependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.5",
+    "@nomiclabs/hardhat-etherscan": "^3.0.3",
     "@nomiclabs/hardhat-waffle": "^2.0.3",
     "@openzeppelin/contracts": "^4.5.0",
+    "@openzeppelin/upgrades-core": "^1.14.2",
     "chai": "^4.3.6",
+    "dotenv": "^16.0.0",
     "ethereum-waffle": "^3.4.4",
     "ethers": "^5.6.4",
-    "hardhat": "^2.9.3"
+    "hardhat": "^2.9.3",
+    "hardhat-deploy": "^0.11.4"
   }
 }
