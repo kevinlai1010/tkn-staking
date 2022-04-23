@@ -2,13 +2,13 @@ const { expect } = require('chai')
 const { ethers } = require('hardhat')
 
 
-describe('stakeV2', function () {
+describe('StakeV2', function () {
   let erc20TKN, stakeV2
   let owner, test1, test2, ownerAdd
 
 
   before(async () => {
-    ;[owner, test1, test2] = await ethers.getSigners()
+    [owner, test1, test2] = await ethers.getSigners()
   })
 
 
@@ -111,7 +111,7 @@ describe('stakeV2', function () {
   })
 
 
-  it('complex test for staking, unstaking, distribution for test1 & test2', async () => {
+  it('mixed testing for staking, unstaking, distribution for test1 & test2', async () => {
     await erc20TKN.connect(test1).approve(stakeV2.address, 1000)
     await erc20TKN.connect(test2).approve(stakeV2.address, 1500)
 
