@@ -19,6 +19,10 @@ contract StakeV2 {
 
     uint256 private constant precision = 10**18;
 
+    event Withdrawed(address addr, uint256 value);
+    event Deposited(address addr, uint256 value);
+    event Distributed(uint256 value);
+
     /**
      * @dev constructor
      * @param _ERC20Token Token Address
@@ -38,6 +42,7 @@ contract StakeV2 {
         );
         total_stake = total_stake.add(_amount);
         ERC20Token.transferFrom(msg.sender, address(this), _amount);
+        emit Deposited(msg.sender, _amount);
     }
 
     /**
@@ -49,9 +54,13 @@ contract StakeV2 {
             total_stake != 0,
             "Cannot distribute to staking pool with 0 stake"
         );
+        uint256 divident = _reward.mul(precision);
+        require(divident > total_stake, "Too small amount of reward to take");
+
         reward_per_token = reward_per_token.add(
             _reward.mul(precision).div(total_stake)
         );
+        emit Distributed(_reward);
     }
 
     /**
@@ -90,6 +99,7 @@ contract StakeV2 {
         );
         total_stake = total_stake.sub(_amount);
         ERC20Token.transfer(msg.sender, _amount);
+        emit Withdrawed(msg.sender, _amount);
     }
 
     /**
@@ -101,5 +111,6 @@ contract StakeV2 {
             precision
         );
         ERC20Token.transfer(msg.sender, reward);
+        emit Withdrawed(msg.sender, reward);
     }
 }
