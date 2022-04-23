@@ -36,6 +36,7 @@ contract StakeV2 {
      * @param _amount The amount of Token that will be staked
      */
     function deposit(uint256 _amount) public {
+        require(_amount > 0, "Cannot stake nothing");
         stake[msg.sender] = stake[msg.sender].add(_amount);
         reward_tally[msg.sender] = reward_tally[msg.sender].add(
             reward_per_token.mul(_amount).div(precision)
@@ -47,7 +48,7 @@ contract StakeV2 {
 
     /**
      * @dev Reward Distributing function according to amount of staked tokens
-     * @param _reward reward rate for distribution
+     * @param _reward reward for distribution
      */
     function distribute(uint256 _reward) public {
         require(
@@ -107,6 +108,7 @@ contract StakeV2 {
      */
     function withdraw_reward() public {
         uint256 reward = compute_reward();
+        require(reward > 0, "Nothing to take reward");
         reward_tally[msg.sender] = stake[msg.sender].mul(reward_per_token).div(
             precision
         );

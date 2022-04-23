@@ -14,6 +14,9 @@ module.exports = {
   },
   defaultNetwork: 'hardhat',
   networks: {
+    hardhat: {
+      chainId: 1337
+    },
     rinkeby: {
       url: process.env.NETWORK_ENDPOINT_RINKEBY,
       accounts: [process.env.ACCOUNT_0_PRIVATE_KEY]
