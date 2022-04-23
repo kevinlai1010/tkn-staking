@@ -11,19 +11,29 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract StakeV2 {
     using SafeMath for uint256;
 
+    IERC20 public tokenAddress;
     uint256 public total_stake = 0; //total amount of tokens in the staking pool
     uint256 public reward_per_token = 0; //accumulated amount of reward at the moment t from staking start point
     mapping(address => uint256) public stake; //staking pool
     mapping(address => uint256) public reward_tally; // refer to explanation.docx file
 
+    uint256 private constant precision = 10**18;
+
+    /**
+     * @dev constructor
+     * @param _tokenAddress Token Address
+     */
+    constructor(address _tokenAddress) {
+        tokenAddress = IERC20(_tokenAddress);
+    }
+
     /**
      * @dev Staking function for each user
-     * @param _address User's Wallet Address
      * @param _amount The amount of Token that will be staked
      */
-    function deposit(address _address, uint256 _amount) public {
-        stake[_address] = stake[_address].add(_amount);
-        reward_tally[_address] = reward_tally[_address].add(
+    function deposit(uint256 _amount) public {
+        stake[msg.sender] = stake[msg.sender].add(_amount);
+        reward_tally[msg.sender] = reward_tally[msg.sender].add(
             reward_per_token.mul(_amount)
         );
         total_stake = total_stake.add(_amount);
@@ -42,29 +52,36 @@ contract StakeV2 {
     }
 
     /**
-     * @dev Compute the total accumulated reward for each stakholder according to staked amount
-     * @param _address Stakholder's wallet address
+     * @dev Compute the amount of tokens stakeholder can unstake from pool
      */
-    function compute_reward(address _address) public view returns (uint256) {
-        uint256 reward = stake[_address].mul(
-            reward_per_token.sub(reward_tally[_address])
+    function compute_unstakable() public view returns (uint256) {
+        uint256 reward = compute_reward();
+        uint256 unstakable = stake[msg.sender].add(reward);
+        return unstakable;
+    }
+
+    /**
+     * @dev Compute the total accumulated reward for each stakholder according to staked amount    
+     */
+    function compute_reward() public view returns (uint256) {
+        uint256 reward = stake[msg.sender].mul(
+            reward_per_token.sub(reward_tally[msg.sender])
         );
         return reward;
     }
 
     /**
-     * @dev Widthdraw some or total amount of staked tokens from staking pool
-     * @param _address Stakholder's wallet address
+     * @dev Widthdraw some or total amount of staked tokens from staking pool     
      * @param _amount Amount for unstaking
      */
-    function withdraw_stake(address _address, uint256 _amount) public {
-        require(stake[_address] != 0, "Stake not found for given address");
+    function withdraw_stake(uint256 _amount) public {
+        require(stake[msg.sender] != 0, "Stake not found for given address");
         require(
-            stake[_address] > _amount,
+            stake[msg.sender] > _amount,
             "Requested amount greater than staked amount"
         );
-        stake[_address] = stake[_address].sub(_amount);
-        reward_tally[_address] = reward_tally[_address].sub(
+        stake[msg.sender] = stake[msg.sender].sub(_amount);
+        reward_tally[msg.sender] = reward_tally[msg.sender].sub(
             reward_per_token.mul(_amount)
         );
         total_stake = total_stake.sub(_amount);
@@ -72,11 +89,10 @@ contract StakeV2 {
 
     /**
      * @dev Widthdraw the total accumulated reward
-     * @param _address Stakholder's wallet address     
      */
-    function withdraw_reward(address _address) public returns (uint256) {
-        uint256 reward = compute_reward(_address);
-        reward_tally[_address] = stake[_address].mul(reward_per_token);
+    function withdraw_reward() public returns (uint256) {
+        uint256 reward = compute_reward();
+        reward_tally[msg.sender] = stake[msg.sender].mul(reward_per_token);
         return reward;
     }
 }
